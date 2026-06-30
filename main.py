@@ -313,7 +313,7 @@ class TabletWindow(QLabel):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SchwebKlang")
     parser.add_argument("--port_name", default = "TabletTheremin 2", help="LoopMIDI output port name")
-    parser.add_argument("--note", type=int, default=69, help="Starting MIDI note (default: 69)")
+    parser.add_argument("--note", type=int, default=69, help="Starting MIDI note (default: 69 (A4)). Bending up from this note.")
     parser.add_argument("--upright", "-u", default = False, action="store_true", help="control tablet in upright mode (Default: Landscape mode). Turn tablet to the left.")
     # parser.add_argument("--pitch", default="y", choices=["x", "y", "p"], help = "choose pitch as a function of x (lateral) position, y (vertical) position or pen pressure")
     # parser.add_argument("--volume", default="p", choices=["x", "y", "p"], help = "choose volume as a function of x (lateral) position, y (vertical) position or pen pressure")
