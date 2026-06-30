@@ -1,84 +1,88 @@
 # SchwebKlang
 
-Turn a graphics tablet into a continuous MIDI performance controller. SchwebKlang uses a pen tablet together with LoopMIDI to create a theremin-like instrument for expressive synthesizer performance.
+SchwebKlang turns a pressure-sensitive graphics tablet into a continuous MIDI controller for expressive synthesizer performance.
 
-The pen position and pressure are converted into MIDI Pitch Bend and Control Change messages, allowing smooth glides, continuous dynamics, and expressive modulation.
+Inspired by the theremin, it allows smooth, continuous pitch control while simultaneously controlling dynamics and another modulation parameter using the tablet position and pen pressure.
+
+The application outputs MIDI through a virtual MIDI port (e.g. LoopMIDI), allowing it to be used with any DAW or software synthesizer.
+
+---
 
 ## Features
 
-- 🎵 Continuous pitch control
-- ✍️ Pressure-sensitive volume control
-- 🎛️ Configurable mapping of tablet X, Y and pressure to Pitch, Volume and Modulation
-- ↕️ Landscape and portrait tablet orientations
-- 🔁 Octave shifting by double-tapping designated tablet regions
-- 🖥️ Optional visualization of the playing area
-- 🎹 Works with any DAW or synthesizer that accepts MIDI input
+- 🎵 Continuous pitch control using MIDI Pitch Bend
+- ✍️ Pressure-sensitive dynamics
+- 🎛️ Freely assign Pitch, Volume and Modulation to tablet X, Y or pressure
+- ↔️ Landscape and portrait ("upright") tablet orientations
+- 🔁 Quick octave shifting via double taps
+- 🖥️ Visualization mode for learning the playing area and controller mapping
+- 🎹 Compatible with any MIDI-capable DAW or synthesizer
 
 ---
 
 ## Requirements
 
-- Python 3.10+
-- A pressure-sensitive graphics tablet (tested with Wacom tablets)
-- Windows (recommended, because of LoopMIDI)
-- LoopMIDI
-- A DAW or synthesizer (e.g. Reaper, Vital, Surge XT, etc.)
+- A pressure-sensitive graphics tablet
+- LoopMIDI (or another virtual MIDI port)
+- A DAW or synthesizer capable of receiving MIDI
 
-### Python packages
-
-Install the required dependencies:
+Install the Python dependencies with
 
 ```bash
-pip install PySide6 mido python-rtmidi numpy
+pip install -r requirements.txt
 ```
-
-`python-rtmidi` provides the MIDI backend used by `mido`.
 
 ---
 
-## MIDI Setup
+## Reaper Setup
 
-1. Install and start **LoopMIDI**.
-2. Create a virtual MIDI port (default name):
+SchwebKlang sends the following MIDI messages:
 
-```
-TabletTheremin 2
-```
+| MIDI Message | Function |
+|--------------|----------|
+| Note On / Off | Starts and stops the note |
+| Pitch Bend | Continuous pitch |
+| CC11 | Volume / Expression |
+| CC1 | Modulation |
 
-or specify another name with `--port_name`.
+Before playing, configure your instrument in Reaper:
 
-3. Configure your DAW to receive MIDI from the LoopMIDI port.
+- **Pitch Bend Range:** Set your synth's pitch bend range to **20 semitones** (recommended). Since SchwebKlang supports octave shifts, the bend range should be **at least ±10 semitones**.
+- **CC11 (Expression):** Learn or map this controller to your instrument's volume or expression parameter.
+- **CC1 (Modulation):** Learn or map this controller to the parameter you want to control (e.g. vibrato, filter cutoff, effects).
 
 ---
 
 ## Running
 
-Default:
+For your first start, it is recommended to use visualization mode:
 
 ```bash
-python schwebklang.py
+python main.py --visualize
 ```
 
-### Visualization mode
+Visualization mode displays the active playing area together with the current controller values, making it easy to understand how the tablet is mapped before performing.
 
-Shows the active playing area and controller values instead of running fullscreen.
+Once you're familiar with the layout, simply run
 
 ```bash
-python schwebklang.py --visualize
+python main.py
 ```
+
+to use SchwebKlang normally.
 
 ### Portrait mode
 
-Rotate the tablet and use portrait orientation.
+Rotate the tablet and enable portrait orientation:
 
 ```bash
-python schwebklang.py --upright
+python main.py --upright
 ```
 
 ### Different starting note
 
 ```bash
-python schwebklang.py --note 60
+python main.py --note 60
 ```
 
 ---
@@ -90,13 +94,13 @@ python schwebklang.py --note 60
 | `--port_name` | LoopMIDI output port name |
 | `--note` | Starting MIDI note |
 | `--upright`, `-u` | Use portrait orientation |
-| `--controls`, `-c` | Assign Pitch, Volume and Mod to `x`, `y`, or `p` |
-| `--visualize`, `-v` | Show instrument geometry instead of fullscreen |
+| `--controls`, `-c` | Assign Pitch, Volume and Modulation to `x`, `y` or `p` |
+| `--visualize`, `-v` | Display the controller layout and current MIDI values while playing |
 
 Example:
 
 ```bash
-python schwebklang.py \
+python main.py \
     --controls y p x \
     --note 69 \
     --visualize
@@ -114,41 +118,41 @@ The three available controller sources are
 | `y` | Vertical pen position |
 | `p` | Pen pressure |
 
-These can be assigned to:
+These can be assigned freely to
 
 - Pitch
 - Volume
 - Modulation
 
-Example:
+For example,
 
 ```bash
 --controls y p x
 ```
 
-means
+assigns
 
-- Pitch ← Y position
-- Volume ← Pen pressure
-- Modulation ← X position
+- Pitch ← vertical position
+- Volume ← pen pressure
+- Modulation ← horizontal position
 
-Any combination is possible.
+When using `--upright`, the coordinate system is rotated internally so that **horizontal** and **vertical** always refer to the physical movement of the pen across the tablet, regardless of its orientation.
 
 ---
 
 ## Playing Area
 
-The tablet surface is divided into regions.
+The tablet surface is divided into several regions.
 
 ### Inner rectangle
 
-The inner rectangle is the active performance area.
+The inner rectangle is the active playing area.
 
-Its coordinates are normalized to values between 0 and 1 before being converted to MIDI.
+Within this region, tablet coordinates are normalized to values between 0 and 1 before being converted to MIDI messages.
 
 ### Margins
 
-The margins provide additional functionality without affecting performance.
+The margins provide additional functionality without interfering with performance.
 
 The left margin is reserved for octave shifting.
 
@@ -158,48 +162,12 @@ The left margin is reserved for octave shifting.
 
 Double-tap inside the octave shift regions.
 
-Landscape mode:
+In landscape mode:
 
 - upper-left corner → +1 octave
 - lower-left corner → −1 octave
 
-Portrait mode:
-
-The direction is adjusted automatically so that the physical gesture remains intuitive.
-
----
-
-## MIDI Messages
-
-SchwebKlang currently sends:
-
-| MIDI Message | Purpose |
-|--------------|---------|
-| Note On | Starts the sustained note |
-| Note Off | Stops the note |
-| Pitch Bend | Continuous pitch |
-| CC11 | Expression / volume |
-| CC1 | Modulation |
-
-Pitch bend range depends on your synthesizer.
-
-**Remember to configure your synth's Pitch Bend Range** to match the desired playing range.
-
----
-
-## Suggested Synth Settings
-
-For expressive playing:
-
-- Mono mode
-- Legato enabled
-- Portamento off (optional)
-- Pitch Bend Range: ±12 semitones (recommended)
-
-Map:
-
-- CC11 → Expression or Volume
-- CC1 → Vibrato, Filter Cutoff, or another expressive parameter
+In upright mode the direction is adjusted automatically so the gestures remain intuitive.
 
 ---
 
@@ -207,50 +175,44 @@ Map:
 
 Visualization mode displays
 
-- normalized X position
-- normalized Y position
-- pressure
-- volume
-- pitch bend value
-- modulation value
+- normalized horizontal position
+- normalized vertical position
+- pen pressure
+- current volume value
+- current pitch bend value
+- current modulation value
 - current octave shift
 
-It also draws
-
-- the active playing rectangle
-- octave shift regions
-
-This mode is useful when adjusting controller mappings.
+It also draws the active playing area and the octave shift regions, making it useful when learning the instrument or experimenting with different controller mappings.
 
 ---
 
-## Example Workflow
+## Signal Flow
 
 ```
 Graphics Tablet
         │
         ▼
-  SchwebKlang
+   SchwebKlang
         │
-   LoopMIDI Port
-        │
-        ▼
-     Reaper
+    LoopMIDI
         │
         ▼
-   Software Synth
+      Reaper
+        │
+        ▼
+ Software Synth
 ```
 
 ---
 
-## Ideas for Future Improvements
+## Future Ideas
 
-- Configurable pitch response curves
-- Multiple playing scales
-- Quantized pitch mode
-- Vibrato gestures
+- Custom pitch response curves
+- Quantized scales
+- Alternative tuning systems
+- User-defined playing zones
 - Multiple MIDI CC outputs
-- User-configurable playing zones
 - Presets
 - OSC support
 
