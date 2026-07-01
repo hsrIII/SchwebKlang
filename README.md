@@ -48,7 +48,7 @@ SchwebKlang sends the following MIDI messages:
 Before playing, configure your instrument in Reaper:
 
 - **Pitch Bend Range:** Set your synth's pitch bend range to **20 semitones** (recommended). Since SchwebKlang supports octave shifts, the bend range should be **at least ±10 semitones**.
-- **CC11 (Expression):** Learn or map this controller to your instrument's volume or expression parameter.
+- **CC7 (Volume):** Learn or map this controller to your instrument's volume or expression parameter.
 - **CC1 (Modulation):** Learn or map this controller to the parameter you want to control (e.g. vibrato, filter cutoff, effects).
 
 ---
