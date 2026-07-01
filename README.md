@@ -42,18 +42,25 @@ SchwebKlang sends the following MIDI messages:
 |--------------|----------|
 | Note On / Off | Starts and stops the note |
 | Pitch Bend | Continuous pitch |
-| CC11 | Volume / Expression |
+| CC7 | Volume |
 | CC1 | Modulation |
 
 Before playing, configure your instrument in Reaper:
 
-- **Pitch Bend Range:** Set your synth's pitch bend range to **20 semitones** (recommended). Since SchwebKlang supports octave shifts, the bend range should be **at least ±10 semitones**.
+- **Pitch Bend Range:** Set your synth's pitch bend range to **+24 semitones** (recommended). Since SchwebKlang supports octave shifts, the bend range should be **at least +12 semitones**.
 - **CC7 (Volume):** Learn or map this controller to your instrument's volume or expression parameter.
 - **CC1 (Modulation):** Learn or map this controller to the parameter you want to control (e.g. vibrato, filter cutoff, effects).
 
 ---
 
 ## Running
+
+Run the program with:
+
+```bash
+python main.py
+```
+
 
 For your first start, it is recommended to use visualization mode:
 
@@ -63,13 +70,6 @@ python main.py --visualize
 
 Visualization mode displays the active playing area together with the current controller values, making it easy to understand how the tablet is mapped before performing.
 
-Once you're familiar with the layout, simply run
-
-```bash
-python main.py
-```
-
-to use SchwebKlang normally.
 
 ### Portrait mode
 
@@ -81,9 +81,14 @@ python main.py --upright
 
 ### Different starting note
 
+Setting a note can be done using:
+
 ```bash
 python main.py --note 60
 ```
+
+Here, C4 = 60 is set as the base note. Pitch is modulated by bending this note up using the pitchwheel midi commands.
+As default base note A4=69 is set.
 
 ---
 
@@ -140,50 +145,19 @@ When using `--upright`, the coordinate system is rotated internally so that **ho
 
 ---
 
-## Playing Area
-
-The tablet surface is divided into several regions.
-
-### Inner rectangle
-
-The inner rectangle is the active playing area.
-
-Within this region, tablet coordinates are normalized to values between 0 and 1 before being converted to MIDI messages.
-
-### Margins
-
-The margins provide additional functionality without interfering with performance.
-
-The left margin is reserved for octave shifting.
-
----
-
 ## Octave Shifting
 
 Double-tap inside the octave shift regions.
 
-In landscape mode:
-
 - upper-left corner → +1 octave
 - lower-left corner → −1 octave
 
-In upright mode the direction is adjusted automatically so the gestures remain intuitive.
 
 ---
 
 ## Visualization Mode
 
-Visualization mode displays
-
-- normalized horizontal position
-- normalized vertical position
-- pen pressure
-- current volume value
-- current pitch bend value
-- current modulation value
-- current octave shift
-
-It also draws the active playing area and the octave shift regions, making it useful when learning the instrument or experimenting with different controller mappings.
+Visualization mode displays the active playing area and the octave shift regions on the screen relative to their position on the tablet, as well as outputs, making it useful when learning the instrument or experimenting with different controller mappings.
 
 ---
 
