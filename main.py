@@ -1,7 +1,7 @@
 import sys
 from PySide6.QtWidgets import QApplication, QLabel
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QPen, QColor
+from PySide6.QtGui import QPainter, QPen, QColor, QFont
 import mido
 import time
 import numpy as np
@@ -15,19 +15,18 @@ class TabletWindow(QLabel):
             color: #1a1a1a;
             font-size: 16px;
         """)
+        self.setFont(QFont("DejaVu Sans Mono"))
         self.setWindowTitle("Tablet")
 
         self.visualize = args.visualize
         if not self.visualize:
             self.showFullScreen()
         else:
-            screen = QApplication.primaryScreen().geometry()
-            print(screen.width(), screen.height())
+            screen = QApplication.primaryScreen().geometry()   #hacky way to get screen size without calling showFullScreen() first. Enables visualization of instrument geometry
             self.width = screen.width
             self.height = screen.height
 
             
-        
         self.setWindowOpacity(0.5)  # transparent window
 
         self.setText("Touch the tablet with the pen...")
@@ -131,13 +130,36 @@ class TabletWindow(QLabel):
             f")"
         )
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event):    #closes window on left mouse press
         if event.button() == Qt.LeftButton:
             self.close()
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event):  #closes window on escape key press
         if event.key() == Qt.Key_Escape:
             self.close()
+
+    def paintEvent(self, event):  
+        """
+        overrides paintEvent method to draw rectangles, only when self.visualize is true
+        """
+        if self.visualize:
+            super().paintEvent(event)
+
+            with QPainter(self) as painter:
+                pen = QPen(QColor(0, 0, 0, 120), 2)
+                painter.setPen(pen)
+                x1,y1,w,h=self.inner_rect_coors[0], self.inner_rect_coors[1], self.inner_rect_coors[2], self.inner_rect_coors[3]
+                painter.drawRect(x1,y1,w,h) #inner rectangle
+                x2,y2,w2,h2=self.upper_octshift_coors[0], self.upper_octshift_coors[1], self.upper_octshift_coors[2], self.upper_octshift_coors[3]
+                x3,y3,w3,h3=self.lower_octshift_coors[0], self.lower_octshift_coors[1], self.lower_octshift_coors[2], self.lower_octshift_coors[3]
+                painter.drawRect(x2,y2,w2,h2) #upper octshift
+                painter.drawRect(x3,y3,w3,h3) #lower octshift
+
+                # painter.drawRect(0, 0, int(self.left_margin_width), h) #left margin rectangle
+                # painter.drawRect(w - int(self.right_margin_width), 0, int(self.right_margin_width), h) #right margin rectangle
+                # painter.drawRect(0, 0, w, int(self.upper_margin_height)) #upper margin rectangle
+                # painter.drawRect(0, h - int(self.lower_margin_height), w, int(self.lower_margin_height)) #lower margin rectangle
+
 
     def check_octave_shift(self, tabletinput_raw):
         """
@@ -178,11 +200,16 @@ class TabletWindow(QLabel):
                         self.note += -12 if not self.upright else 12
                         self.octave_shift += -1 if not self.upright else 1
 
-
         self.last_tap_time = now
         self.last_tap_pos = (x, y)
 
     def tabletEvent(self, event):
+        """
+        main method
+        method for reading tablet input and sending midi messages. 
+        calls functions for calculating pitch, volume and mod values
+        """
+
         tabletinput_raw = [event.position().x(),event.position().y(),event.pressure()]
         tabletinput_normed = self._inner_window_pos_norm(tabletinput_raw)
 
@@ -284,42 +311,34 @@ class TabletWindow(QLabel):
         return mod
 
     def monitor(self, tabletinput, output):
+        """
+        when self.visualize (--visualize) is True, print output on screen
+        """
         x,y,pressure = tabletinput[self.i_x], tabletinput[self.i_y], tabletinput[self.i_p]
-        volume, pitch, effect = output
+        volume, pitch, mod = output
         #  print(f"X={x:.1f}  Y={y:.1f}  Pressure={pressure:.3f} ||  V={volume}  P={pitch}  E={effect}")
+        
+        # self.setText(
+        #     f"X: {x:.1f}\n"
+        #     f"Y: {y:.1f}\n"
+        #     f"Pressure: {pressure:.3f}\n\n"
+        #     # f"left margin: {self.left_margin_width}, right margin: {self.right_margin_width}, upper margin: {self.upper_margin_height}, lower margin: {self.lower_margin_height}\n"
+        #     # f"inner width: {self.inner_width}, inner_height: {self.inner_height}\n"
+        #     # f"width: {self.width()}, height: {self.height()}\n\n"
+        #     f"volume={round(volume/self.volume_max *100)}% \npitch={round(pitch/self.pitch_wheel_max,2)}\nmod={effect}\n\n"
+        #     f"octave: {self.octave_shift}"
+        # )
+        # print(            f"{self.controls_args[0]:<2}: PITCH  -> {self.pitchwheel_message:<12} {pitch:04d}\n"
+        #     f"{self.controls_args[1]:<2}: VOLUME -> CC{self.volume_channel:<10} {volume:03d} \n"
+        #     f"{self.controls_args[2]:<2}: MOD    -> CC{self.mod_channel:<10} {mod:03d} \n\n\n")
+
         self.setText(
-            f"X: {x:.1f}\n"
-            f"Y: {y:.1f}\n"
-            f"Pressure: {pressure:.3f}\n\n"
-            # f"left margin: {self.left_margin_width}, right margin: {self.right_margin_width}, upper margin: {self.upper_margin_height}, lower margin: {self.lower_margin_height}\n"
-            # f"inner width: {self.inner_width}, inner_height: {self.inner_height}\n"
-            # f"width: {self.width()}, height: {self.height()}\n\n"
-            f"volume={round(volume/self.volume_max *100)}% \npitch={round(pitch/self.pitch_wheel_max,2)}\nmod={effect}\n\n"
-            f"octave: {self.octave_shift}"
+            f"{self.controls_args[0]:<2}: PITCH  -> {self.pitchwheel_message:<12} {pitch:04d}\n"
+            f"{self.controls_args[1]:<2}: VOLUME -> {'CC'+str(self.volume_channel):<12} {volume:04d}\n"
+            f"{self.controls_args[2]:<2}: MOD    -> {'CC'+str(self.mod_channel):<12} {mod:04d}\n\n\n"
+            f"octave: {self.octave_shift}\n\n"
+            f"upright: {self.upright}"
         )
-    def ensure_geometry(self):
-        if not hasattr(self, "left_margin_width"):
-            self.setup_geometry()
-
-
-    def paintEvent(self, event): 
-        if self.visualize:
-            super().paintEvent(event)
-
-            with QPainter(self) as painter:
-                pen = QPen(QColor(0, 0, 0, 120), 2)
-                painter.setPen(pen)
-                x1,y1,w,h=self.inner_rect_coors[0], self.inner_rect_coors[1], self.inner_rect_coors[2], self.inner_rect_coors[3]
-                painter.drawRect(x1,y1,w,h) #inner rectangle
-                x2,y2,w2,h2=self.upper_octshift_coors[0], self.upper_octshift_coors[1], self.upper_octshift_coors[2], self.upper_octshift_coors[3]
-                x3,y3,w3,h3=self.lower_octshift_coors[0], self.lower_octshift_coors[1], self.lower_octshift_coors[2], self.lower_octshift_coors[3]
-                painter.drawRect(x2,y2,w2,h2) #upper octshift
-                painter.drawRect(x3,y3,w3,h3) #lower octshift
-
-                # painter.drawRect(0, 0, int(self.left_margin_width), h) #left margin rectangle
-                # painter.drawRect(w - int(self.right_margin_width), 0, int(self.right_margin_width), h) #right margin rectangle
-                # painter.drawRect(0, 0, w, int(self.upper_margin_height)) #upper margin rectangle
-                # painter.drawRect(0, h - int(self.lower_margin_height), w, int(self.lower_margin_height)) #lower margin rectangle
 
 
 
