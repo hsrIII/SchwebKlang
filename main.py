@@ -331,11 +331,13 @@ class TabletWindow(QLabel):
         # print(            f"{self.controls_args[0]:<2}: PITCH  -> {self.pitchwheel_message:<12} {pitch:04d}\n"
         #     f"{self.controls_args[1]:<2}: VOLUME -> CC{self.volume_channel:<10} {volume:03d} \n"
         #     f"{self.controls_args[2]:<2}: MOD    -> CC{self.mod_channel:<10} {mod:03d} \n\n\n")
+        note_str = f" ON" if self.note_playing else f"OFF"
 
         self.setText(
             f"{self.controls_args[0]:<2}: PITCH  -> {self.pitchwheel_message:<12} {pitch:04d}\n"
             f"{self.controls_args[1]:<2}: VOLUME -> {'CC'+str(self.volume_channel):<12} {volume:04d}\n"
-            f"{self.controls_args[2]:<2}: MOD    -> {'CC'+str(self.mod_channel):<12} {mod:04d}\n\n\n"
+            f"{self.controls_args[2]:<2}: MOD    -> {'CC'+str(self.mod_channel):<12} {mod:04d}\n\n"
+            f"note: {note_str} \n\n\n"
             f"octave: {self.octave_shift}\n\n"
             f"upright: {self.upright}"
         )
