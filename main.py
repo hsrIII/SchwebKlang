@@ -71,9 +71,10 @@ class TabletWindow(QLabel):
             self.inner_rect_coors = [self.upper_margin_height, self.left_margin_width,self.inner_height, self.inner_width]#x1,y1,w,h
 
         controls_dict = {"x": self.i_x, "y": self.i_y, "p": self.i_p}
-        self.i_pitch = controls_dict[args.controls[0]]
-        self.i_volume = controls_dict[args.controls[1]]
-        self.i_mod = controls_dict[args.controls[2]]
+        self.controls_args = args.controls
+        self.i_pitch = controls_dict[self.controls_args[0]]
+        self.i_volume = controls_dict[self.controls_args[1]]
+        self.i_mod = controls_dict[self.controls_args[2]]
 
 
         ## to be able to detect double clicks:
@@ -115,6 +116,20 @@ class TabletWindow(QLabel):
         self.low_note = 60-12
         self.high_note = 60+12
 
+        self.pitchwheel_message = "pitchwheel"
+        self.volume_channel = 7
+        self.mod_channel = 1 
+
+
+    def __str__(self):
+        return (
+            f"SchwebKlang(\n"
+            f"  port={self.port.name},\n"
+            f"  {self.controls_args[0]}: PITCH -> {self.pitchwheel_message},  {self.controls_args[1]}: VOLUME -> CC{self.volume_channel},  {self.controls_args[2]}: MOD -> CC{self.mod_channel},\n"
+            f"  bottom note={self.note},\n"
+            f"  upright={self.upright}\n"
+            f")"
+        )
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -184,10 +199,9 @@ class TabletWindow(QLabel):
                 self.port.send(mido.Message("note_on", note=self.note, velocity=127))
                 self.note_playing = True
 
-            self.port.send(mido.Message("pitchwheel", pitch=pitch)) #Pitch wheel range has to be set in Reaper
-            self.port.send(mido.Message("control_change", control=11, value=volume)) 
-            self.port.send(mido.Message("control_change", control=1, value=mod)
-)
+            self.port.send(mido.Message(self.pitchwheel_message, pitch=pitch)) #Pitch wheel range has to be set in Reaper
+            self.port.send(mido.Message("control_change", control=self.volume_channel, value=volume)) 
+            self.port.send(mido.Message("control_change", control=self.mod_channel, value=mod))
 
         else:
             if self.note_playing:
@@ -323,11 +337,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(args)
-
     app = QApplication(sys.argv)
     instrument = TabletWindow(args)
     instrument.note = args.note
+
+    print(instrument)
+
     instrument.showFullScreen()   
     instrument.show()
 
